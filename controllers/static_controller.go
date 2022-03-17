@@ -114,6 +114,9 @@ func (r *StaticReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 				if err := r.Update(ctx, instance); err != nil {
 					return ctrl.Result{}, err
 				}
+				if err := DeleteCaddyRoute(ingress.Spec); err != nil {
+					logger.Info("delete caddy route error !!!!!")
+				}
 			}
 		}
 		return reconcile.Result{}, nil
