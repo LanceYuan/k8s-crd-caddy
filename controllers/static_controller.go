@@ -23,8 +23,13 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/util/workqueue"
 	"reflect"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -164,9 +169,29 @@ func (r *StaticReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 }
 
+func (r *StaticReconciler) DeleteIngress(event event.DeleteEvent, limiter workqueue.RateLimitingInterface) {
+	name := event.Object.GetName()
+	namespace := event.Object.GetNamespace()
+	instance := &devopsv1.Static{}
+	reqNamespaceName := types.NamespacedName{Name: name, Namespace: namespace}
+	if err := r.Get(context.TODO(), reqNamespaceName, instance); err != nil {
+		logger.Info(err.Error())
+	} else {
+		if err := r.Delete(context.TODO(), instance); err != nil {
+			logger.Info(err.Error())
+		}
+		if err := DeleteCaddyRouteInstance(instance); err != nil {
+			logger.Info(err.Error())
+		}
+	}
+}
+
 // SetupWithManager sets up the controller with the Manager.
 func (r *StaticReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&devopsv1.Static{}).
+		Watches(&source.Kind{
+			Type: &networkingv1.Ingress{}},
+			handler.Funcs{DeleteFunc: r.DeleteIngress}).
 		Complete(r)
 }
