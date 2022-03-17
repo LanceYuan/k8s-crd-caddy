@@ -1,0 +1,11 @@
+apiVersion: devops.codepy.net/v1
+kind: Static
+metadata:
+  name: static-sample
+spec:
+  ingressClassName: nginx
+  path: /abcd.txt
+  content: LanceYuan
+  hosts:
+    - app.codepy.net
+    - file.codepy.net
