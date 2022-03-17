@@ -27,16 +27,16 @@ type CaddyRouteHandle struct {
 
 func AddCaddyRoute(app *devopsv1.Static) error {
 	client := http.Client{Timeout: 10 * time.Second}
-	body := map[string]interface{}{
-		"match": []map[string]interface{}{
+	body := CaddyRoute{
+		Match: []CaddyRouteMatch{
 			{
-				"path": []string{app.Spec.Path},
+				Path: []string{app.Spec.Path},
 			},
 		},
-		"handle": []map[string]interface{}{
+		Handle: []CaddyRouteHandle{
 			{
-				"body":    app.Spec.Content,
-				"handler": "static_response",
+				Body:    app.Spec.Content,
+				Handler: "static_response",
 			},
 		},
 	}
