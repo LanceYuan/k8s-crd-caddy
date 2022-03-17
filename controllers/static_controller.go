@@ -119,7 +119,7 @@ func (r *StaticReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 				if err := r.Update(ctx, instance); err != nil {
 					return ctrl.Result{}, err
 				}
-				if err := DeleteCaddyRoute(ingress.Spec); err != nil {
+				if err := DeleteCaddyRoute(ingress.Spec.Rules[0].HTTP.Paths[0].Path); err != nil {
 					logger.Info("delete caddy route error !!!!!")
 				}
 			}
@@ -153,7 +153,7 @@ func (r *StaticReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		logger.Info("get Ingress exist !!!!!")
 		newIngress := NewIngress(instance)
 		if !reflect.DeepEqual(newIngress.Spec, ingress.Spec) {
-			if err := DeleteCaddyRoute(ingress.Spec); err != nil {
+			if err := DeleteCaddyRoute(ingress.Spec.Rules[0].HTTP.Paths[0].Path); err != nil {
 				logger.Info("delete caddy route error !!!!!")
 			}
 			if err := AddCaddyRoute(instance); err != nil {
@@ -180,7 +180,7 @@ func (r *StaticReconciler) DeleteIngress(event event.DeleteEvent, limiter workqu
 		if err := r.Delete(context.TODO(), instance); err != nil {
 			logger.Info(err.Error())
 		}
-		if err := DeleteCaddyRouteInstance(instance); err != nil {
+		if err := DeleteCaddyRoute(instance.Spec.Path); err != nil {
 			logger.Info(err.Error())
 		}
 	}
