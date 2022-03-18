@@ -111,7 +111,8 @@ func NewIngress(app *devopsv1.Static) *networkingv1.Ingress {
 			Name:      app.Name,
 			Namespace: app.Namespace,
 			Labels: map[string]string{
-				"app": app.Name,
+				"app":  "static",
+				"name": app.Name,
 			},
 		},
 		Spec: networkingv1.IngressSpec{
