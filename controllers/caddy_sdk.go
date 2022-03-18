@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	devopsv1 "k8s-crd-caddy/api/v1"
 	"net/http"
 	"time"
@@ -58,37 +57,15 @@ func AddCaddyRoute(app *devopsv1.Static) error {
 	return nil
 }
 
-func DeleteCaddyRoute(path string) error {
+func DeleteCaddyRoute(id string) error {
 	client := http.Client{Timeout: 10 * time.Second}
-	req, err := http.NewRequest(http.MethodGet, "http://caddy-controller.codepy.net/config/apps/http/servers/srv0/routes", nil)
+	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("http://caddy-controller.codepy.net/id/%s", id), nil)
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	resp, err := client.Do(req)
-	if err != nil {
+	if _, err := client.Do(req); err != nil {
 		return err
-	}
-	defer resp.Body.Close()
-	respByte, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-	var routes []CaddyRoute
-	if err := json.Unmarshal(respByte, &routes); err != nil {
-		return err
-	}
-	for idx, route := range routes {
-		if path == route.Match[0].Path[0] {
-			delReq, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("http://caddy-controller.codepy.net/config/apps/http/servers/srv0/routes/%d", idx), nil)
-			if err != nil {
-				return err
-			}
-			_, err = client.Do(delReq)
-			if err != nil {
-				return err
-			}
-		}
 	}
 	return nil
 }
