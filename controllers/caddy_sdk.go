@@ -11,6 +11,7 @@ import (
 )
 
 type CaddyRoute struct {
+	Id     string             `json:"@id"`
 	Match  []CaddyRouteMatch  `json:"match"`
 	Handle []CaddyRouteHandle `json:"handle"`
 }
@@ -27,6 +28,7 @@ type CaddyRouteHandle struct {
 func AddCaddyRoute(app *devopsv1.Static) error {
 	client := http.Client{Timeout: 10 * time.Second}
 	body := CaddyRoute{
+		Id: app.Name,
 		Match: []CaddyRouteMatch{
 			{
 				Path: []string{app.Spec.Path},
