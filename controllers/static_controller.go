@@ -164,6 +164,15 @@ func (r *StaticReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			if err := r.Client.Update(ctx, newIngress); err != nil {
 				return ctrl.Result{}, err
 			}
+		} else {
+			if err := DeleteCaddyRoute(ingress.Spec.Rules[0].HTTP.Paths[0].Path); err != nil {
+				logger.Info("delete caddy route error !!!!!")
+				return ctrl.Result{}, err
+			}
+			if err := AddCaddyRoute(instance); err != nil {
+				logger.Info("add caddy route error !!!!!")
+				return ctrl.Result{}, err
+			}
 		}
 		return ctrl.Result{}, nil
 	}
