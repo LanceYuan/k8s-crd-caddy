@@ -45,7 +45,7 @@ func AddCaddyRoute(app *devopsv1.Static) error {
 		return err
 	}
 	reader := bytes.NewReader(bodyByte)
-	req, err := http.NewRequest(http.MethodPost, "http://caddy-controller/config/apps/http/servers/srv0/routes", reader)
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://caddy-controller.%s/config/apps/http/servers/srv0/routes", app.Namespace), reader)
 	if err != nil {
 		return err
 	}
@@ -57,9 +57,9 @@ func AddCaddyRoute(app *devopsv1.Static) error {
 	return nil
 }
 
-func DeleteCaddyRoute(id string) error {
+func DeleteCaddyRoute(id, namespace string) error {
 	client := http.Client{Timeout: 10 * time.Second}
-	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("http://caddy-controller/id/%s", id), nil)
+	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("http://caddy-controller.%s/id/%s", namespace, id), nil)
 	if err != nil {
 		return err
 	}

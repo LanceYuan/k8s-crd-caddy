@@ -32,3 +32,41 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+    - networking.k8s.io
+  resources:
+    - ingresses
+  verbs:
+    - get
+    - list
+    - watch
+    - create
+    - update
+    - patch
+    - delete
+- apiGroups:
+    - apps
+  resources:
+    - deployments
+    - deployments/rollback
+    - deployments/scale
+  verbs:
+    - get
+    - list
+    - watch
+    - create
+    - update
+    - patch
+    - delete
+- apiGroups:
+    - ""
+  resources:
+    - services
+  verbs:
+    - get
+    - list
+    - watch
+    - create
+    - update
+    - patch
+    - delete
