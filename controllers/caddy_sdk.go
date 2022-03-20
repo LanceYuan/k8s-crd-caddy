@@ -40,11 +40,10 @@ func AddCaddyRoute(app *devopsv1.Static) error {
 			},
 		},
 	}
-	bodyByte, err := json.Marshal(body)
-	if err != nil {
+	reader := new(bytes.Buffer)
+	if err := json.NewEncoder(reader).Encode(body); err != nil {
 		return err
 	}
-	reader := bytes.NewReader(bodyByte)
 	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://caddy-controller.%s:2019/config/apps/http/servers/srv0/routes", app.Namespace), reader)
 	if err != nil {
 		return err
