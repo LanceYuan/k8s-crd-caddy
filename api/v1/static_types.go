@@ -31,7 +31,8 @@ type StaticSpec struct {
 
 	// Foo is an example field of Static. Edit static_types.go to remove/update
 
-	IngressClassName *string  `json:"ingressClassName"`
+	IngressClassName *string  `json:"ingressClassName,omitempty"`
+	IngressName      string   `json:"ingressName,omitempty"`
 	Path             string   `json:"path"`
 	Content          string   `json:"content"`
 	Hosts            []string `json:"hosts"`

@@ -127,7 +127,16 @@ func (r *StaticReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return reconcile.Result{}, nil
 	}
 	ingress := &networkingv1.Ingress{}
-	if err := r.Client.Get(ctx, req.NamespacedName, ingress); err != nil {
+	var reqIngress types.NamespacedName
+	if instance.Spec.IngressName != "" {
+		reqIngress = types.NamespacedName{
+			Namespace: req.Namespace,
+			Name:      instance.Spec.IngressName,
+		}
+	} else {
+		reqIngress = req.NamespacedName
+	}
+	if err := r.Client.Get(ctx, reqIngress, ingress); err != nil {
 		if !errors.IsNotFound(err) {
 			return ctrl.Result{}, err
 		}
@@ -153,31 +162,36 @@ func (r *StaticReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			return ctrl.Result{}, nil
 		}
 	} else {
-		logger.Info("get Ingress exist !!!!!")
-		newIngress := NewIngress(instance)
-		if !reflect.DeepEqual(newIngress.Spec, ingress.Spec) {
-			if err := DeleteCaddyRoute(ingress.Name, ingress.Namespace); err != nil {
-				logger.Info("delete caddy route error !!!!!")
-			}
-			if err := AddCaddyRoute(instance); err != nil {
-				logger.Info("add caddy route error !!!!!")
-				return ctrl.Result{}, err
-			}
-			logger.Info("update Ingress !!!!!")
-			if err := r.Client.Update(ctx, newIngress); err != nil {
-				if err := DeleteCaddyRoute(newIngress.Name, newIngress.Namespace); err != nil {
+		if instance.Spec.IngressName != "" {
+			logger.Info("update exist ingress rule....")
+			return ctrl.Result{}, nil
+		} else {
+			logger.Info("get Ingress exist !!!!!")
+			newIngress := NewIngress(instance)
+			if !reflect.DeepEqual(newIngress.Spec, ingress.Spec) {
+				if err := DeleteCaddyRoute(ingress.Name, ingress.Namespace); err != nil {
 					logger.Info("delete caddy route error !!!!!")
 				}
-				return ctrl.Result{}, err
-			}
-		} else {
-			if err := DeleteCaddyRoute(ingress.Name, ingress.Namespace); err != nil {
-				logger.Info("delete caddy route error !!!!!")
-				return ctrl.Result{}, err
-			}
-			if err := AddCaddyRoute(instance); err != nil {
-				logger.Info("add caddy route error !!!!!")
-				return ctrl.Result{}, err
+				if err := AddCaddyRoute(instance); err != nil {
+					logger.Info("add caddy route error !!!!!")
+					return ctrl.Result{}, err
+				}
+				logger.Info("update Ingress !!!!!")
+				if err := r.Client.Update(ctx, newIngress); err != nil {
+					if err := DeleteCaddyRoute(newIngress.Name, newIngress.Namespace); err != nil {
+						logger.Info("delete caddy route error !!!!!")
+					}
+					return ctrl.Result{}, err
+				}
+			} else {
+				if err := DeleteCaddyRoute(ingress.Name, ingress.Namespace); err != nil {
+					logger.Info("delete caddy route error !!!!!")
+					return ctrl.Result{}, err
+				}
+				if err := AddCaddyRoute(instance); err != nil {
+					logger.Info("add caddy route error !!!!!")
+					return ctrl.Result{}, err
+				}
 			}
 		}
 		return ctrl.Result{}, nil
