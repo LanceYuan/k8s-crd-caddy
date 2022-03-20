@@ -148,3 +148,69 @@ func NewIngress(app *devopsv1.Static) *networkingv1.Ingress {
 	}
 	return ingObj
 }
+
+func UpdateExistIngress(ingress *networkingv1.Ingress, instance *devopsv1.Static) (*networkingv1.Ingress, error) {
+	var (
+		ruleIdx   []interface{}
+		updateIdx [][2]int
+		noHost    []string
+	)
+	for idx, rule := range ingress.Spec.Rules {
+		for _, host := range instance.Spec.Hosts {
+			if rule.Host == host {
+				ruleIdx = append(ruleIdx, idx)
+			} else {
+				ruleIdx = append(ruleIdx, host)
+			}
+		}
+	}
+	for _, idx := range ruleIdx {
+		if idxNum, ok := idx.(int); ok {
+			for pathIdx, path := range ingress.Spec.Rules[idxNum].HTTP.Paths {
+				if path.Path == instance.Spec.Path {
+					updateIdx = append(updateIdx, [2]int{idxNum, pathIdx})
+				} else {
+					updateIdx = append(updateIdx, [2]int{idxNum, -1})
+				}
+			}
+		} else {
+			noHost = append(noHost, idx.(string))
+		}
+	}
+	pathType := networkingv1.PathTypeImplementationSpecific
+	for _, rulePathIdx := range updateIdx {
+		if rulePathIdx[0] >= 0 && rulePathIdx[1] >= 0 {
+			ingress.Spec.Rules[rulePathIdx[0]].HTTP.Paths[rulePathIdx[1]].Backend.ServiceName = controllerName
+			ingress.Spec.Rules[rulePathIdx[0]].HTTP.Paths[rulePathIdx[1]].Backend.ServicePort = intstr.IntOrString{Type: intstr.Int, IntVal: 80}
+		} else if rulePathIdx[0] >= 0 && rulePathIdx[1] < 0 {
+			ingress.Spec.Rules[rulePathIdx[0]].HTTP.Paths = append(ingress.Spec.Rules[rulePathIdx[0]].HTTP.Paths, networkingv1.HTTPIngressPath{
+				Path:     instance.Spec.Path,
+				PathType: &pathType,
+				Backend: networkingv1.IngressBackend{
+					ServiceName: controllerName,
+					ServicePort: intstr.IntOrString{Type: intstr.Int, IntVal: 80},
+				},
+			})
+		}
+		for _, host := range noHost {
+			ingress.Spec.Rules = append(ingress.Spec.Rules, networkingv1.IngressRule{
+				Host: host,
+				IngressRuleValue: networkingv1.IngressRuleValue{
+					HTTP: &networkingv1.HTTPIngressRuleValue{
+						Paths: []networkingv1.HTTPIngressPath{
+							{
+								Path:     instance.Spec.Path,
+								PathType: &pathType,
+								Backend: networkingv1.IngressBackend{
+									ServiceName: controllerName,
+									ServicePort: intstr.IntOrString{Type: intstr.Int, IntVal: 80},
+								},
+							},
+						},
+					},
+				},
+			})
+		}
+	}
+	return ingress, nil
+}
