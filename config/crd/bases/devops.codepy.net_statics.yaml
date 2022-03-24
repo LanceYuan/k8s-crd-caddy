@@ -16,7 +16,17 @@ spec:
     singular: static
   scope: Namespaced
   versions:
-  - name: v1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.hosts
+      name: Host
+      type: string
+    - jsonPath: .spec.path
+      name: Path
+      type: string
+    - jsonPath: .spec.content
+      name: Content
+      type: string
+    name: v1
     schema:
       openAPIV3Schema:
         description: Static is the Schema for the statics API
