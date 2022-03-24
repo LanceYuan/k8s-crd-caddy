@@ -54,6 +54,11 @@ type StaticReconciler struct {
 //+kubebuilder:rbac:groups=devops.codepy.net,resources=statics,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=devops.codepy.net,resources=statics/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=devops.codepy.net,resources=statics/finalizers,verbs=update
+//+kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=apps,resources=deployments/rollback,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=apps,resources=deployments/scale,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -79,9 +84,11 @@ func (r *StaticReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 	deployment := &appsv1.Deployment{}
 	svc := &corev1.Service{}
-	reqNamespaceName := req.NamespacedName
-	reqNamespaceName.Name = controllerName
-	if err := r.Client.Get(ctx, reqNamespaceName, deployment); err != nil {
+	caddyObjectKey := client.ObjectKey{
+		Name:      controllerName,
+		Namespace: req.Namespace,
+	}
+	if err := r.Client.Get(ctx, caddyObjectKey, deployment); err != nil {
 		if !errors.IsNotFound(err) {
 			return ctrl.Result{}, err
 		}
@@ -90,7 +97,7 @@ func (r *StaticReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			return ctrl.Result{}, err
 		}
 	}
-	if err := r.Client.Get(ctx, reqNamespaceName, svc); err != nil {
+	if err := r.Client.Get(ctx, caddyObjectKey, svc); err != nil {
 		if !errors.IsNotFound(err) {
 			return ctrl.Result{}, err
 		}
