@@ -49,7 +49,7 @@ type StaticStatus struct {
 //+kubebuilder:subresource:status
 
 // Static is the Schema for the statics API
-//+kubebuilder:printcolumn:name="Host",type=[]string,JSONPath=`.spec.hosts`
+//+kubebuilder:printcolumn:name="Host",type=string,JSONPath=`.spec.hosts`
 //+kubebuilder:printcolumn:name="Path",type=string,JSONPath=`.spec.path`
 //+kubebuilder:printcolumn:name="Content",type=string,JSONPath=`.spec.content`
 type Static struct {
