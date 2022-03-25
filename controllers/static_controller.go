@@ -90,7 +90,6 @@ func (r *StaticReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		Name:      controllerName,
 		Namespace: req.Namespace,
 	}
-	findRef := false
 	if err := r.Client.Get(ctx, caddyObjectKey, deployment); err != nil {
 		if !errors.IsNotFound(err) {
 			return ctrl.Result{}, err
@@ -103,6 +102,7 @@ func (r *StaticReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			return ctrl.Result{}, err
 		}
 	} else {
+		findRef := false
 		for _, ref := range deployment.OwnerReferences {
 			if ref.Name == instance.Name {
 				findRef = true
@@ -126,9 +126,32 @@ func (r *StaticReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		if !errors.IsNotFound(err) {
 			return ctrl.Result{}, err
 		}
-		svc = NewService(instance)
+		svc, err = NewService(instance, r)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
 		if err := r.Client.Create(ctx, svc); err != nil {
 			return ctrl.Result{}, err
+		}
+	} else {
+		findSvc := false
+		for _, ref := range svc.OwnerReferences {
+			if ref.Name == instance.Name {
+				findSvc = true
+				break
+			}
+		}
+		if !findSvc {
+			svc.OwnerReferences = append(svc.OwnerReferences, metav1.OwnerReference{
+				APIVersion:         instance.APIVersion,
+				Kind:               instance.Kind,
+				Name:               instance.Name,
+				BlockOwnerDeletion: pointer.Bool(true),
+				UID:                instance.UID,
+			})
+			if err := r.Client.Update(ctx, svc); err != nil {
+				return ctrl.Result{}, err
+			}
 		}
 	}
 	if !instance.ObjectMeta.DeletionTimestamp.IsZero() {

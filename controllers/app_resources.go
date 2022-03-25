@@ -68,15 +68,15 @@ func NewDeployment(app *devopsv1.Static, r *StaticReconciler) (*appsv1.Deploymen
 		},
 	}
 	if err := ctrl.SetControllerReference(app, deployment, r.Scheme); err != nil {
-		logger.Info("controller reference error...")
+		logger.Info("controller reference deployment error...")
 		return nil, err
 	}
 	return deployment, nil
 }
 
-func NewService(app *devopsv1.Static) *corev1.Service {
+func NewService(app *devopsv1.Static, r *StaticReconciler) (*corev1.Service, error) {
 	selector := map[string]string{"app": controllerName}
-	return &corev1.Service{
+	service := &corev1.Service{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Service",
 			APIVersion: "v1",
@@ -105,6 +105,11 @@ func NewService(app *devopsv1.Static) *corev1.Service {
 			Type: corev1.ServiceTypeClusterIP,
 		},
 	}
+	if err := ctrl.SetControllerReference(app, service, r.Scheme); err != nil {
+		logger.Info("controller reference service error...")
+		return nil, err
+	}
+	return service, nil
 }
 
 func NewIngress(app *devopsv1.Static) *networkingv1.Ingress {
