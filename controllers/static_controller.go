@@ -23,8 +23,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/utils/pointer"
 	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -92,8 +94,21 @@ func (r *StaticReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		if !errors.IsNotFound(err) {
 			return ctrl.Result{}, err
 		}
-		deployment = NewDeployment(instance)
+		deployment, err = NewDeployment(instance, r)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
 		if err := r.Client.Create(ctx, deployment); err != nil {
+			return ctrl.Result{}, err
+		}
+	} else {
+		deployment.OwnerReferences = append(deployment.OwnerReferences, metav1.OwnerReference{
+			APIVersion:         instance.APIVersion,
+			Kind:               instance.Kind,
+			Name:               instance.Name,
+			BlockOwnerDeletion: pointer.Bool(true),
+		})
+		if err := r.Client.Update(ctx, deployment); err != nil {
 			return ctrl.Result{}, err
 		}
 	}
@@ -212,6 +227,7 @@ func (r *StaticReconciler) DeleteIngress(event event.DeleteEvent, limiter workqu
 func (r *StaticReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&devopsv1.Static{}).
+		Owns(&appsv1.Deployment{}).
 		Watches(&source.Kind{
 			Type: &networkingv1.Ingress{}},
 			handler.Funcs{DeleteFunc: r.DeleteIngress}).

@@ -8,11 +8,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/pointer"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
-func NewDeployment(app *devopsv1.Static) *appsv1.Deployment {
+func NewDeployment(app *devopsv1.Static, r *StaticReconciler) (*appsv1.Deployment, error) {
 	selector := map[string]string{"app": controllerName}
-	return &appsv1.Deployment{
+	deployment := &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Deployment",
 			APIVersion: "apps/v1",
@@ -66,6 +67,11 @@ func NewDeployment(app *devopsv1.Static) *appsv1.Deployment {
 			},
 		},
 	}
+	if err := ctrl.SetControllerReference(app, deployment, r.Scheme); err != nil {
+		logger.Info("controller reference error...")
+		return nil, err
+	}
+	return deployment, nil
 }
 
 func NewService(app *devopsv1.Static) *corev1.Service {
