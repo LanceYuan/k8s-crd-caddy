@@ -90,6 +90,7 @@ func (r *StaticReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		Name:      controllerName,
 		Namespace: req.Namespace,
 	}
+	findRef := false
 	if err := r.Client.Get(ctx, caddyObjectKey, deployment); err != nil {
 		if !errors.IsNotFound(err) {
 			return ctrl.Result{}, err
@@ -102,14 +103,23 @@ func (r *StaticReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			return ctrl.Result{}, err
 		}
 	} else {
-		deployment.OwnerReferences = append(deployment.OwnerReferences, metav1.OwnerReference{
-			APIVersion:         instance.APIVersion,
-			Kind:               instance.Kind,
-			Name:               instance.Name,
-			BlockOwnerDeletion: pointer.Bool(true),
-		})
-		if err := r.Client.Update(ctx, deployment); err != nil {
-			return ctrl.Result{}, err
+		for _, ref := range deployment.OwnerReferences {
+			if ref.Name == instance.Name {
+				findRef = true
+				break
+			}
+		}
+		if !findRef {
+			deployment.OwnerReferences = append(deployment.OwnerReferences, metav1.OwnerReference{
+				APIVersion:         instance.APIVersion,
+				Kind:               instance.Kind,
+				Name:               instance.Name,
+				BlockOwnerDeletion: pointer.Bool(true),
+				UID:                instance.UID,
+			})
+			if err := r.Client.Update(ctx, deployment); err != nil {
+				return ctrl.Result{}, err
+			}
 		}
 	}
 	if err := r.Client.Get(ctx, caddyObjectKey, svc); err != nil {
