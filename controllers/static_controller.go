@@ -205,6 +205,12 @@ func (r *StaticReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 				logger.Info("update finalizer err !!!!!")
 				return ctrl.Result{}, err
 			}
+			instance.Status.IngressStatus = ingress.Status
+			logger.Info("update crd status !!!!!")
+			if err := r.Status().Update(ctx, instance); err != nil {
+				logger.Info("update crd status err !!!!!")
+				return ctrl.Result{}, err
+			}
 			return ctrl.Result{}, nil
 		}
 	} else {
